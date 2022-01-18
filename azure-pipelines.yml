@@ -1,0 +1,64 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+- master
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: JFrogToolsInstaller@1
+  inputs:
+    artifactoryConnection: 'ecosys-artifactory'
+    cliInstallationRepo: 'jfrog-cli-remote'
+    installExtractors: true
+    extractorsInstallationRepo: 'extractors'
+
+- task: JFrogGenericArtifacts@1
+  inputs:
+    command: 'Upload'
+    connection: 'ecosys-artifactory'
+    specSource: 'taskConfiguration'
+    fileSpec: |
+      {
+        "files": [
+          {
+            "pattern": "README",
+            "target": "generic-local/rabbit"
+          }
+        ]
+      }
+    collectBuildInfo: true
+    buildName: '$(Build.DefinitionName)'
+    buildNumber: '$(Build.BuildNumber)'
+    includeEnvVars: true
+    failNoOp: true
+  
+- task: JFrogGenericArtifacts@1
+  inputs:
+    command: 'Download'
+    connection: 'ecosys-artifactory'
+    specSource: 'taskConfiguration'
+    fileSpec: |
+      {
+        "files": [
+          {
+            "pattern": "generic-local/rabbit",
+            "target": "./"
+          }
+        ]
+      }
+    collectBuildInfo: true
+    buildName: '$(Build.DefinitionName)'
+    buildNumber: '$(Build.BuildNumber)'
+    includeEnvVars: true
+    failNoOp: true
+    
+- task: JFrogPublishBuildInfo@1
+  inputs:
+    artifactoryConnection: 'ecosys-artifactory'
+    buildName: '$(Build.DefinitionName)'
+    buildNumber: '$(Build.BuildNumber)'
